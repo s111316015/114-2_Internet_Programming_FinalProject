@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文青風連線拉密 Rummikub (數據完全版)</title>
+    <style>
+        /* --- 全域防捲軸與現代版面設定 --- */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; 
+            background-color: #EFEFEE;
+            font-family: 'Helvetica Neue', Arial, 'Microsoft JhengHei', sans-serif;
+            color: #4A4A4A;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            width: 950px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* --- 頂端資訊列 --- */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        h1 {
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin: 0;
+            font-size: 22px;
+            color: #5A6B7C;
+        }
+
+        /* 頂端數據面板共用樣式 */
+        .info-panel {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        }
+
+        .opponent-panel {
+            background-color: #D3DCD0; /* 莫蘭迪綠 */
+            color: #526355;
+        }
+
+        .deck-panel {
+            background-color: #D9D2C9; /* 莫蘭迪大地駝色，代表牌堆 */
+            color: #6E655B;
+        }
+
+        .card-count-badge {
+            color: white;
+            padding: 1px 6px;
+            border-radius: 10px;
+            font-size: 11px;
+        }
+
+        .opponent-panel .card-count-badge { background-color: #526355; }
+        .deck-panel .card-count-badge { background-color: #6E655B; }
+
+        .stats-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* --- 1. 桌面網格區 (6排 × 15格) --- */
+        .board {
+            background-color: #E4E4E2;
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .board-row {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr); 
+            gap: 4px;
+        }
+
+        .cell {
+            aspect-ratio: 3 / 4;
+            background-color: #F5F5F3;
+            border: 1px dashed #D1D1CE;
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        /* --- 2. 下方主操作區：左手牌、右按鈕 --- */
+        .bottom-area {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            height: 160px; 
+        }
+
+        /* 手牌主容器 */
+        .hand-container {
+            flex: 1;
+            background-color: #DCDCDA;
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            overflow: hidden;
+        }
+
+        .hand-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .hand-title {
+            font-size: 12px;
+            color: #7A7A77;
+            font-weight: bold;
+        }
+
+        /* 理牌按鈕區 */
+        .sort-btn-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-sort {
+            background-color: #B5B5B2;
+            color: white;
+            border: none;
+            padding: 3px 8px;
+            font-size: 11px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-sort:hover { background-color: #9A9A97; }
+
+        /* 手牌網格：多行防爆 */
+        .hand-slots {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap; 
+            align-content: flex-start;
+            gap: 6px;
+            background-color: #F5F5F3;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #D1D1CE;
+            overflow-y: auto; 
+        }
+
+        .hand-card-wrapper {
+            width: calc((100% - 84px) / 15); 
+            aspect-ratio: 3 / 4;
+        }
+
+        /* --- 3. 卡牌核心樣式 --- */
+        .card {
+            width: 100%;
+            height: 100%;
+            aspect-ratio: 3 / 4;
+            background-color: #F9F9F6;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            font-weight: bold;
+            user-select: none;
+            cursor: pointer;
+            box-sizing: border-box;
+            border: 1px solid #E2E2DF;
+        }
+
+        .card.new-placed { border: 2px solid #8397A7; }
+        .card.old-placed { background-color: #EDECE8; }
+        .card.selected { outline: 3px solid #A8B5C2; }
+
+        /* 莫蘭迪色調 */
+        .card-red { color: #D9A0A0; }
+        .card-blue { color: #8397A7; }
+        .card-yellow { color: #C2A679; }
+        .card-black { color: #4A4A4A; }
+        .card-joker { color: #CD5C5C; }
+
+        /* --- 右側動態按鈕控制區 --- */
+        .control-panel {
+            width: 160px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-action {
+            width: 100%;
+            height: 45px;
+            color: white;
+            border: none;
+            font-size: 13px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: background 0.2s;
+        }
+
+        .btn-draw { background-color: #A3B899; } 
+        .btn-draw:hover { background-color: #8CA282; }
+
+        .btn-reset { background-color: #D9A0A0; } 
+        .btn-reset:hover { background-color: #C08888; }
+
+        .btn-submit { background-color: #8397A7; } 
+        .btn-submit:hover { background-color: #6B7E8E; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <!-- 頂端資訊 -->
+        <div class="top-bar">
+            <h1>RUMMIKUB</h1>
+            <div class="stats-group">
+                <!-- 牌堆剩餘張數 (新功能) -->
+                <div class="info-panel deck-panel">
+                    <span>牌堆剩餘張數</span>
+                    <span class="card-count-badge" id="deckRemainingCount">78</span>
+                </div>
+                <!-- 對手剩餘牌數 -->
+                <div class="info-panel opponent-panel">
+                    <span>對手剩餘牌數</span>
+                    <span class="card-count-badge" id="opponentCardCount">14</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 桌面區 -->
+        <div class="board" id="gameBoard"></div>
+
+        <!-- 下方主操作區 -->
+        <div class="bottom-area">
+            <!-- 左：手牌區 -->
+            <div class="hand-container">
+                <div class="hand-header">
+                    <div class="hand-title">你的手牌區</div>
+                    <div class="sort-btn-group">
+                        <button class="btn-sort" onclick="sortHandByColor()">按顏色排序</button>
+                        <button class="btn-sort" onclick="sortHandByNumber()">按數字排序</button>
+                    </div>
+                </div>
+                <div class="hand-slots" id="playerHand" onclick="handleReturnToHand()"></div>
+            </div>
+
+            <!-- 右：動態按鈕面板 -->
+            <div class="control-panel" id="actionPanel">
+                <!-- 按鈕會由 JavaScript 動態控制 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始模擬手牌
+        let myHand = [
+            { id: 1, color: "RED", number: 5 },
+            { id: 2, color: "BLUE", number: 10 },
+            { id: 3, color: "YELLOW", number: 10 },
+            { id: 4, color: "BLACK", number: 9 },
+            { id: 5, color: "BLACK", number: 13 },
+            { id: 6, color: "JOKER", number: 0 },
+            { id: 7, color: "RED", number: 11 },
+            { id: 8, color: "BLUE", number: 4 }
+        ];
+
+        // 模擬數據（未來連線時，這兩個數字會與 Java 後端的 DeckManager.java 進行即時綁定同步！）
+        let opponentCardSum = 14;
+        let deckRemainingSum = 78; // 106張 - 玩家A(14張) - 玩家B(14張) = 78張
+
+        // 備份狀態
+        let initialHandBackup = [];
+        let initialBoardBackup = [];
+
+        const totalRows = 6;    
+        const colsPerRow = 15;  
+        let boardState = Array(totalRows).fill(null).map(() => Array(colsPerRow).fill(null));
+
+        // 初始注入上回合舊牌
+        boardState[1][5] = { id: 99, color: "RED", number: 1, isNew: false };
+        boardState[1][6] = { id: 100, color: "RED", number: 2, isNew: false };
+        boardState[1][7] = { id: 101, color: "RED", number: 3, isNew: false };
+
+        let selectedInfo = null;
+
+        function initGame() {
+            backupCurrentState();
+            refreshUI();
+        }
+
+        function refreshUI() {
+            // 更新看板數據
+            document.getElementById('opponentCardCount').innerText = opponentCardSum;
+            document.getElementById('deckRemainingCount').innerText = deckRemainingSum;
+            
+            renderBoardGrid();
+            renderHand();
+            renderControlPanel();
+        }
+
+        function backupCurrentState() {
+            initialHandBackup = JSON.parse(JSON.stringify(myHand));
+            initialBoardBackup = JSON.parse(JSON.stringify(boardState));
+        }
+
+        function isTurnModified() {
+            return JSON.stringify(boardState) !== JSON.stringify(initialBoardBackup);
+        }
+
+        // --- 渲染桌面 ---
+        function renderBoardGrid() {
+            const board = document.getElementById('gameBoard');
+            board.innerHTML = '';
+
+            for (let r = 0; r < totalRows; r++) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'board-row';
+                
+                for (let c = 0; c < colsPerRow; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    
+                    const cardData = boardState[r][c];
+                    if (cardData) {
+                        const cardDiv = document.createElement('div');
+                        cardDiv.className = `card card-${cardData.color.toLowerCase()}`;
+                        cardDiv.className += cardData.isNew ? ' new-placed' : ' old-placed';
+                        cardDiv.innerText = cardData.color === "JOKER" ? "☺" : cardData.number;
+
+                        if (selectedInfo && selectedInfo.type === "BOARD" && selectedInfo.row === r && selectedInfo.col === c) {
+                            cardDiv.classList.add('selected');
+                        }
+
+                        cardDiv.onclick = (e) => {
+                            e.stopPropagation();
+                            if (selectedInfo && selectedInfo.type === "BOARD" && selectedInfo.row === r && selectedInfo.col === c) {
+                                selectedInfo = null;
+                            } else {
+                                selectedInfo = { type: "BOARD", id: cardData.id, row: r, col: c };
+                            }
+                            refreshUI();
+                        };
+                        cell.appendChild(cardDiv);
+                    } else {
+                        cell.onclick = () => handleCellClick(r, c);
+                    }
+                    rowDiv.appendChild(cell);
+                }
+                board.appendChild(rowDiv);
+            }
+        }
+
+        // --- 渲染手牌 ---
+        function renderHand() {
+            const handSlots = document.getElementById('playerHand');
+            handSlots.innerHTML = '';
+
+            myHand.forEach(card => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'hand-card-wrapper';
+
+                const cardDiv = document.createElement('div');
+                cardDiv.className = `card card-${card.color.toLowerCase()}`;
+                cardDiv.innerText = card.color === "JOKER" ? "☺" : card.number;
+                
+                if (selectedInfo && selectedInfo.type === "HAND" && selectedInfo.id === card.id) {
+                    cardDiv.classList.add('selected');
+                }
+
+                cardDiv.onclick = (e) => {
+                    e.stopPropagation();
+                    if (selectedInfo && selectedInfo.type === "HAND" && selectedInfo.id === card.id) {
+                        selectedInfo = null;
+                    } else {
+                        selectedInfo = { type: "HAND", id: card.id };
+                    }
+                    refreshUI();
+                };
+
+                wrapper.appendChild(cardDiv);
+                handSlots.appendChild(wrapper);
+            });
+        }
+
+        // --- 渲染控制面板 ---
+        function renderControlPanel() {
+            const panel = document.getElementById('actionPanel');
+            panel.innerHTML = ''; 
+
+            if (!isTurnModified()) {
+                const btnDraw = document.createElement('button');
+                btnDraw.className = 'btn-action btn-draw';
+                btnDraw.innerText = '摸一張牌並結束';
+                btnDraw.onclick = actionDrawCard;
+                panel.appendChild(btnDraw);
+            } else {
+                const btnReset = document.createElement('button');
+                btnReset.className = 'btn-action btn-reset';
+                btnReset.innerText = '重新開始 (回到最初)';
+                btnReset.onclick = actionResetTurn;
+                panel.appendChild(btnReset);
+
+                const btnSubmit = document.createElement('button');
+                btnSubmit.className = 'btn-action btn-submit';
+                btnSubmit.innerText = '結束回合 (驗證)';
+                btnSubmit.onclick = actionSubmitTurn;
+                panel.appendChild(btnSubmit);
+            }
+        }
+
+        // --- 核心移動機制 ---
+        function handleCellClick(toRow, toCol) {
+            if (!selectedInfo) return;
+
+            if (selectedInfo.type === "HAND") {
+                const cardIndex = myHand.findIndex(c => c.id === selectedInfo.id);
+                const cardData = myHand[cardIndex];
+                cardData.isNew = true; 
+
+                boardState[toRow][toCol] = cardData;
+                myHand.splice(cardIndex, 1);
+            } else if (selectedInfo.type === "BOARD") {
+                const cardData = boardState[selectedInfo.row][selectedInfo.col];
+                boardState[toRow][toCol] = cardData;
+                boardState[selectedInfo.row][selectedInfo.col] = null;
+            }
+
+            selectedInfo = null; 
+            refreshUI();
+        }
+
+        function handleReturnToHand() {
+            if (selectedInfo && selectedInfo.type === "BOARD") {
+                const cardData = boardState[selectedInfo.row][selectedInfo.col];
+                if (cardData) {
+                    if (cardData.isNew) {
+                        delete cardData.isNew;
+                        myHand.push(cardData);
+                        boardState[selectedInfo.row][selectedInfo.col] = null;
+                    } else {
+                        alert("🔒 這是之前回合留下的牌，不能收回手牌區！");
+                    }
+                    selectedInfo = null;
+                    refreshUI();
+                }
+            }
+        }
+
+        // --- 排序功能 ---
+        const colorOrder = { "RED": 1, "BLUE": 2, "YELLOW": 3, "BLACK": 4, "JOKER": 5 };
+
+        function sortHandByColor() {
+            myHand.sort((a, b) => {
+                if (colorOrder[a.color] !== colorOrder[b.color]) {
+                    return colorOrder[a.color] - colorOrder[b.color];
+                }
+                return a.number - b.number;
+            });
+            refreshUI();
+        }
+
+        function sortHandByNumber() {
+            myHand.sort((a, b) => {
+                if (a.number !== b.number) {
+                    return a.number - b.number;
+                }
+                return colorOrder[a.color] - colorOrder[b.color];
+            });
+            refreshUI();
+        }
+
+        // --- 按鈕事件處理 ---
+        function actionDrawCard() {
+            if (deckRemainingSum > 0) {
+                deckRemainingSum--; // 模擬摸牌成功，牌堆張數減少
+                alert("你選擇摸牌！剩餘牌堆減 1。之後連線時，後端 Java 會透過 WebSocket 塞一張真牌進去，並強制切換回合。");
+                refreshUI();
+            } else {
+                alert("牌堆已經乾了，無法再抽牌！");
+            }
+        }
+
+        function actionResetTurn() {
+            myHand = JSON.parse(JSON.stringify(initialHandBackup));
+            boardState = JSON.parse(JSON.stringify(initialBoardBackup));
+            selectedInfo = null;
+            refreshUI();
+        }
+
+        function actionSubmitTurn() {
+            alert("正在發送當前 6x15 桌面狀態至伺服器驗證...");
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html> 
+
+
