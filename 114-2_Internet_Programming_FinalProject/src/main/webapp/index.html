@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>文青風連線拉密 Rummikub (長連線對戰版)</title>
+    <title>連線拉密 Rummikub (高對比競技對戰版)</title>
     <style>
-        /* --- 全域防捲軸與現代版面設定 --- */
+        /* --- 全域防捲軸與現代高對比度規格 --- */
         html, body {
             height: 100%;
             margin: 0;
             padding: 0;
             overflow: hidden; 
-            background-color: #EFEFEE;
-            font-family: 'Helvetica Neue', Arial, 'Microsoft JhengHei', sans-serif;
-            color: #4A4A4A;
+            background-color: #121416; /* 深碳黑底色，讓純白卡牌絕對顯眼 */
+            font-family: 'Impact', Arial, 'Microsoft JhengHei', sans-serif;
+            color: #F7FAFC;
         }
 
         body {
@@ -41,51 +41,49 @@
         }
 
         h1 {
-            font-weight: 300;
-            letter-spacing: 2px;
+            font-weight: 900;
+            letter-spacing: 3px;
             margin: 0;
-            font-size: 22px;
-            color: #5A6B7C;
+            font-size: 26px;
+            color: #FFFFFF;
+            font-family: 'Arial Black', sans-serif;
         }
 
-        /* 頂端數據面板共用樣式 */
+        /* 頂端數據面板：拉高色彩飽和度 */
         .info-panel {
-            padding: 5px 12px;
+            padding: 6px 14px;
             border-radius: 20px;
             font-size: 13px;
             font-weight: bold;
             display: flex;
             align-items: center;
             gap: 6px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
 
-        .opponent-panel { background-color: #D3DCD0; color: #526355; }
-        .deck-panel { background-color: #D9D2C9; color: #6E655B; }
-        .identity-panel { background-color: #D2D7DF; color: #4F5661; }
+        .opponent-panel { background-color: #E53E3E; color: #FFFFFF; } /* 戰鬥鮮紅 */
+        .deck-panel { background-color: #DD6B20; color: #FFFFFF; }     /* 活力飽和橘 */
+        .identity-panel { background-color: #3182CE; color: #FFFFFF; } /* 競技高對比藍 */
 
         .card-count-badge {
+            background-color: rgba(0,0,0,0.3) !important;
             color: white;
-            padding: 1px 6px;
+            padding: 2px 8px;
             border-radius: 10px;
-            font-size: 11px;
+            font-size: 12px;
         }
-
-        .opponent-panel .card-count-badge { background-color: #526355; }
-        .deck-panel .card-count-badge { background-color: #6E655B; }
-        .identity-panel .card-count-badge { background-color: #4F5661; }
 
         .stats-group {
             display: flex;
             gap: 10px;
         }
 
-        /* --- 1. 桌面網格區 (6排 × 15格) --- */
+        /* --- 1. 桌面網格區 —— 沉穩深邃藍綠，營造實體桌遊墊質感 --- */
         .board {
-            background-color: #E4E4E2;
+            background-color: #17242D; 
             border-radius: 12px;
-            padding: 10px;
-            box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+            padding: 12px;
+            box-shadow: inset 0 4px 10px rgba(0,0,0,0.4), 0 4px 15px rgba(0,0,0,0.3);
             display: flex;
             flex-direction: column;
             gap: 4px;
@@ -99,16 +97,20 @@
 
         .cell {
             aspect-ratio: 3 / 4;
-            background-color: #F5F5F3;
-            border: 1px dashed #D1D1CE;
+            background-color: #202F3A;
+            border: 1px solid #2A3E4D;
             border-radius: 4px;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: pointer;
+            transition: background 0.1s;
+        }
+        .cell:hover {
+            background-color: #273A48;
         }
 
-        /* --- 2. 下方主操作區：右手牌、左按鈕 --- */
+        /* --- 2. 下方主操作區 --- */
         .bottom-area {
             display: flex;
             gap: 12px;
@@ -119,13 +121,14 @@
         /* 手牌主容器 */
         .hand-container {
             flex: 1;
-            background-color: #DCDCDA;
+            background-color: #1E2226;
             border-radius: 12px;
             padding: 10px;
             display: flex;
             flex-direction: column;
             gap: 6px;
             overflow: hidden;
+            border: 1px solid #2D3136;
         }
 
         .hand-header {
@@ -135,9 +138,10 @@
         }
 
         .hand-title {
-            font-size: 12px;
-            color: #7A7A77;
+            font-size: 13px;
+            color: #A0AEC0;
             font-weight: bold;
+            font-family: sans-serif;
         }
 
         /* 理牌按鈕區 */
@@ -147,27 +151,30 @@
         }
 
         .btn-sort {
-            background-color: #B5B5B2;
+            background-color: #4A5568;
             color: white;
             border: none;
-            padding: 3px 8px;
-            font-size: 11px;
+            padding: 5px 12px;
+            font-size: 12px;
             border-radius: 4px;
             cursor: pointer;
+            font-weight: bold;
+            font-family: sans-serif;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
         }
-        .btn-sort:hover { background-color: #9A9A97; }
+        .btn-sort:hover { background-color: #718096; }
 
-        /* 手牌網格：多行防爆 */
+        /* 手牌網格 */
         .hand-slots {
             flex: 1;
             display: flex;
             flex-wrap: wrap; 
             align-content: flex-start;
             gap: 6px;
-            background-color: #F5F5F3;
+            background-color: #141619;
             padding: 8px;
             border-radius: 6px;
-            border: 1px solid #D1D1CE;
+            border: 1px solid #282C30;
             overflow-y: auto; 
         }
 
@@ -176,35 +183,42 @@
             aspect-ratio: 3 / 4;
         }
 
-        /* --- 3. 卡牌核心樣式 --- */
+        /* --- 3. 卡牌核心規格 —— 數字巨幅放大、骨牌級高對比度質感 --- */
         .card {
             width: 100%;
             height: 100%;
             aspect-ratio: 3 / 4;
-            background-color: #F9F9F6;
-            border-radius: 4px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            background-color: #FFFFFF; /* 純白厚實底色 */
+            border-radius: 6px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 14px;
-            font-weight: bold;
+            font-size: 24px; /* 📢 數字強力放大！舊版為 14px */
+            font-weight: 900; /* 📢 採用最粗字體等級 */
+            font-family: 'Arial Black', 'Impact', sans-serif; /* 換用高清晰、粗體專用字型 */
             user-select: none;
             cursor: pointer;
             box-sizing: border-box;
-            border: 1px solid #E2E2DF;
+            border: 1px solid #D2D6DC;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.5);
         }
 
-        .card.new-placed { border: 2px solid #8397A7; }
-        .card.old-placed { background-color: #EDECE8; }
-        .card.selected { outline: 3px solid #A8B5C2; }
+        /* 新出牌與選取邊框強度拉高 */
+        .card.new-placed { border: 3px solid #38A169; } /* 醒目寶石綠新牌外框 */
+        .card.old-placed { background-color: #F7FAFC; border: 1px solid #CBD5E0; }
+        .card.selected { outline: 4px solid #3182CE; }  /* 強烈雷射藍選取外框 */
 
-        /* 莫蘭迪色調 */
-        .card-red { color: #D9A0A0; }
-        .card-blue { color: #8397A7; }
-        .card-yellow { color: #C2A679; }
-        .card-black { color: #4A4A4A; }
-        .card-joker { color: #CD5C5C; }
+        /* 📢 拋棄莫蘭迪！換上高飽和、高清晰度色彩 */
+        .card-red { color: #E53E3E; }    /* 明亮正紅 */
+        .card-blue { color: #0055A5; }   /* 深邃寶藍（在白底上擁有最強辨識度） */
+        .card-yellow { color: #D69E2E; } /* 高飽和金黃（帶點暗金色，絕不會在白底上隱形） */
+        .card-black { color: #111111; }  /* 漆黑墨色 */
+        .card-joker { color: #9B5DE5; }  /* 獨立炫亮紫作為 Joker，一眼看穿局勢 */
 
         /* --- 右側動態按鈕控制區 --- */
         .control-panel {
@@ -224,24 +238,25 @@
             border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
             transition: background 0.2s;
+            font-family: sans-serif;
         }
 
-        .btn-draw { background-color: #A3B899; } 
-        .btn-draw:hover { background-color: #8CA282; }
+        .btn-draw { background-color: #48BB78; } /* 競技綠 */
+        .btn-draw:hover { background-color: #38A169; }
 
-        .btn-reset { background-color: #D9A0A0; } 
-        .btn-reset:hover { background-color: #C08888; }
+        .btn-reset { background-color: #E53E3E; } /* 警告紅 */
+        .btn-reset:hover { background-color: #C53030; }
 
-        .btn-submit { background-color: #8397A7; } 
-        .btn-submit:hover { background-color: #6B7E8E; }
+        .btn-submit { background-color: #3182CE; } /* 決策藍 */
+        .btn-submit:hover { background-color: #2B6CB0; }
 
-        /* --- 📢 問題1：全版配對中等待畫面 --- */
+        /* --- 📢 全版配對中等待畫面 --- */
         #matchingOverlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-color: #EFEFEE;
+            background-color: #121416;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -250,8 +265,8 @@
         }
         .spinner {
             width: 40px; height: 40px;
-            border: 3px solid #DCDCDA;
-            border-top: 3px solid #8397A7;
+            border: 4px solid #1A202C;
+            border-top: 4px solid #3182CE;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-bottom: 20px;
@@ -263,8 +278,8 @@
 
     <div id="matchingOverlay">
         <div class="spinner"></div>
-        <h2 style="font-weight: 300; color: #5A6B7C; letter-spacing: 2px; margin: 0;">文青風連線拉密</h2>
-        <p style="font-size: 14px; color: #7A7A77; margin-top: 10px;" id="matchingStatus">正在尋找世界某處的對手，請稍候...</p>
+        <h2 style="font-weight: 900; color: #FFFFFF; letter-spacing: 3px; margin: 0; font-family: 'Arial Black', sans-serif;">RUMMIKUB ONLINE</h2>
+        <p style="font-size: 14px; color: #A0AEC0; margin-top: 10px; font-family: sans-serif;" id="matchingStatus">正在連線至天梯佇列，尋找實力相當的對手...</p>
     </div>
 
     <div class="game-container">
@@ -308,7 +323,7 @@
         const wsUrl = "ws://localhost:8080/114-2_Internet_Programming_FinalProject/rummikub";
         let socket;
         let myIdentity = "WAITING"; 
-        let isMyTurn = false; // 📢 問題3：追蹤當前是否為自己的回合
+        let isMyTurn = false; 
 
         function initWebSocket() {
             socket = new WebSocket(wsUrl);
@@ -321,13 +336,11 @@
                 const data = JSON.parse(e.data);
                 console.log("[WS] 收到伺服器廣播數據: ", data);
 
-                // 📢 問題1 & 2：開局通知，接收伺服器隨機發的 14 張牌且棋盤完全乾淨
                 if (data.action === "START") {
                     myIdentity = data.identity;
-                    isMyTurn = (myIdentity === "PLAYER_A"); // 玩家A為先手
+                    isMyTurn = (myIdentity === "PLAYER_A"); 
                     document.getElementById('myIdentityTag').innerText = (myIdentity === "PLAYER_A") ? "玩家 A (先手)" : "玩家 B (後手)";
                     
-                    // 隱藏配對 Overlay 進入棋盤
                     document.getElementById('matchingOverlay').style.display = 'none';
                     
                     myHand = data.hand;
@@ -340,18 +353,16 @@
                     refreshUI();
                 }
                 
-                // 同步最新桌面狀態
                 else if (data.action === "SYNC_BOARD") {
                     if (data.msg) alert("📢 " + data.msg);
                     boardState = data.boardState;
                     deckRemainingSum = data.deckRemaining;
                     opponentCardSum = data.opponentCardCount;
-                    isMyTurn = data.isYourTurn; // 切換回合權
+                    isMyTurn = data.isYourTurn; 
                     backupCurrentState();
                     refreshUI();
                 }
 
-                // 📢 問題4：接收後端摸牌成功的實體卡牌
                 else if (data.action === "DRAW_RESULT") {
                     if (data.newCard) {
                         myHand.push(data.newCard);
@@ -359,29 +370,27 @@
                     }
                     deckRemainingSum = data.deckRemaining;
                     opponentCardSum = data.opponentCardCount;
-                    isMyTurn = false; // 📢 問題5：摸一張牌後強制結束回合
+                    isMyTurn = false; 
                     backupCurrentState();
                     refreshUI();
                 }
 
-                // 📢 問題5 & 6：接收驗證結果
                 else if (data.action === "TURN_RESULT") {
                     if (data.success) {
                         alert("🎉 " + data.msg);
                         boardState = data.boardState;
-                        isMyTurn = false; // 回合正常移交
+                        isMyTurn = false; 
                     } else {
-                        // 📢 問題6：牌組不符規定，恢復原狀，加入罰摸的那張新牌
                         alert("❌ " + data.msg);
                         
-                        // ✨【核心修正】在塞入罰摸的新卡牌之前，先將手牌陣列完全回溯倒帶還原！
+                        // 【已保存的修復核心】出牌失敗時，完整還原手牌防吞機制
                         myHand = JSON.parse(JSON.stringify(initialHandBackup));
 
                         if (data.newCard) {
                             myHand.push(data.newCard);
                         }
-                        boardState = data.boardState; // 後端傳回的原始殘局狀態
-                        isMyTurn = false; // 罰摸後強制輪到對手
+                        boardState = data.boardState; 
+                        isMyTurn = false; 
                     }
                     deckRemainingSum = data.deckRemaining;
                     opponentCardSum = data.opponentCardCount;
@@ -404,7 +413,6 @@
         // ==========================================
         // 🧊 遊戲核心與 UI 渲染邏輯
         // ==========================================
-        // 📢 問題2：一開始初始化皆為空，等待伺服器同步隨機資料
         let myHand = [];
         let opponentCardSum = 14;
         let deckRemainingSum = 106;
@@ -440,7 +448,6 @@
             return JSON.stringify(boardState) !== JSON.stringify(initialBoardBackup);
         }
 
-        // --- 渲染桌面 ---
         function renderBoardGrid() {
             const board = document.getElementById('gameBoard');
             board.innerHTML = '';
@@ -466,7 +473,6 @@
 
                         cardDiv.onclick = (e) => {
                             e.stopPropagation();
-                            // 📢 問題3：非自己回合拒減互動
                             if (!isMyTurn) { alert("⏳ 目前是對手的回合，請靜心等待！"); return; }
                             
                             if (selectedInfo && selectedInfo.type === "BOARD" && selectedInfo.row === r && selectedInfo.col === c) {
@@ -479,7 +485,7 @@
                         cell.appendChild(cardDiv);
                     } else {
                         cell.onclick = () => {
-                            if (!isMyTurn) return; // 📢 問題3：非自己回合拒絕落子
+                            if (!isMyTurn) return; 
                             handleCellClick(r, c);
                         };
                     }
@@ -489,7 +495,6 @@
             }
         }
 
-        // --- 渲染手牌 ---
         function renderHand() {
             const handSlots = document.getElementById('playerHand');
             handSlots.innerHTML = '';
@@ -508,7 +513,6 @@
 
                 cardDiv.onclick = (e) => {
                     e.stopPropagation();
-                    // 📢 問題3：非自己回合拒絕選取手牌
                     if (!isMyTurn) { alert("⏳ 還沒輪到你，不能偷偷抽調手牌唷！"); return; }
                     
                     if (selectedInfo && selectedInfo.type === "HAND" && selectedInfo.id === card.id) {
@@ -524,15 +528,13 @@
             });
         }
 
-        // --- 渲染右側按鈕控制面板 ---
         function renderControlPanel() {
             const panel = document.getElementById('actionPanel');
             panel.innerHTML = ''; 
 
-            // 📢 問題3：非自己回合直接高亮提示，不渲染任何功能按鈕
             if (!isMyTurn) {
                 const statusDiv = document.createElement('div');
-                statusDiv.style.cssText = "text-align:center; color:#7A7A77; font-size:13px; font-weight:bold; padding:15px; border:1px dashed #B5B5B2; border-radius:6px; background:#EDECE8;";
+                statusDiv.style.cssText = "text-align:center; color:#A0AEC0; font-size:13px; font-weight:bold; padding:15px; border:1px dashed #4A5568; border-radius:6px; background:#1A202C;";
                 statusDiv.innerText = "⏳ 對手正在激烈理牌中...";
                 panel.appendChild(statusDiv);
                 return;
@@ -559,7 +561,6 @@
             }
         }
 
-        // --- 核心落子與收回邏輯 ---
         function handleCellClick(toRow, toCol) {
             if (!isMyTurn || !selectedInfo) return;
 
@@ -598,7 +599,6 @@
             }
         }
 
-        // --- 排序理牌演算法 ---
         const colorOrder = { "RED": 1, "BLUE": 2, "YELLOW": 3, "BLACK": 4, "JOKER": 5 };
 
         function sortHandByColor() {
@@ -617,9 +617,6 @@
             refreshUI();
         }
 
-        // ==========================================
-        // 🚀 連線按鈕事件處理與 JSON 數據傳輸
-        // ==========================================
         function actionDrawCard() {
             if (!isMyTurn) return;
             const payload = { action: "DRAW_CARD" };

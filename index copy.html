@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>文青風連線拉密 Rummikub (數據完全版)</title>
+    <title>文青風連線拉密 Rummikub (長連線對戰版)</title>
     <style>
         /* --- 全域防捲軸與現代版面設定 --- */
         html, body {
@@ -60,15 +60,9 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.03);
         }
 
-        .opponent-panel {
-            background-color: #D3DCD0; /* 莫蘭迪綠 */
-            color: #526355;
-        }
-
-        .deck-panel {
-            background-color: #D9D2C9; /* 莫蘭迪大地駝色，代表牌堆 */
-            color: #6E655B;
-        }
+        .opponent-panel { background-color: #D3DCD0; color: #526355; }
+        .deck-panel { background-color: #D9D2C9; color: #6E655B; }
+        .identity-panel { background-color: #D2D7DF; color: #4F5661; }
 
         .card-count-badge {
             color: white;
@@ -79,6 +73,7 @@
 
         .opponent-panel .card-count-badge { background-color: #526355; }
         .deck-panel .card-count-badge { background-color: #6E655B; }
+        .identity-panel .card-count-badge { background-color: #4F5661; }
 
         .stats-group {
             display: flex;
@@ -113,7 +108,7 @@
             cursor: pointer;
         }
 
-        /* --- 2. 下方主操作區：左手牌、右按鈕 --- */
+        /* --- 2. 下方主操作區：右手牌、左按鈕 --- */
         .bottom-area {
             display: flex;
             gap: 12px;
@@ -241,21 +236,49 @@
 
         .btn-submit { background-color: #8397A7; } 
         .btn-submit:hover { background-color: #6B7E8E; }
+
+        /* --- 📢 問題1：全版配對中等待畫面 --- */
+        #matchingOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #EFEFEE;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid #DCDCDA;
+            border-top: 3px solid #8397A7;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
+    <div id="matchingOverlay">
+        <div class="spinner"></div>
+        <h2 style="font-weight: 300; color: #5A6B7C; letter-spacing: 2px; margin: 0;">文青風連線拉密</h2>
+        <p style="font-size: 14px; color: #7A7A77; margin-top: 10px;" id="matchingStatus">正在尋找世界某處的對手，請稍候...</p>
+    </div>
+
     <div class="game-container">
-        <!-- 頂端資訊 -->
         <div class="top-bar">
             <h1>RUMMIKUB</h1>
             <div class="stats-group">
-                <!-- 牌堆剩餘張數 (新功能) -->
+                <div class="info-panel identity-panel">
+                    <span>對戰身份</span>
+                    <span class="card-count-badge" id="myIdentityTag">等待配對...</span>
+                </div>
                 <div class="info-panel deck-panel">
                     <span>牌堆剩餘張數</span>
-                    <span class="card-count-badge" id="deckRemainingCount">78</span>
+                    <span class="card-count-badge" id="deckRemainingCount">106</span>
                 </div>
-                <!-- 對手剩餘牌數 -->
                 <div class="info-panel opponent-panel">
                     <span>對手剩餘牌數</span>
                     <span class="card-count-badge" id="opponentCardCount">14</span>
@@ -263,15 +286,12 @@
             </div>
         </div>
 
-        <!-- 桌面區 -->
         <div class="board" id="gameBoard"></div>
 
-        <!-- 下方主操作區 -->
         <div class="bottom-area">
-            <!-- 左：手牌區 -->
             <div class="hand-container">
                 <div class="hand-header">
-                    <div class="hand-title">你的手牌區</div>
+                    <div class="hand-title">你的手牌區 (點擊空白處可收回選取的新牌)</div>
                     <div class="sort-btn-group">
                         <button class="btn-sort" onclick="sortHandByColor()">按顏色排序</button>
                         <button class="btn-sort" onclick="sortHandByNumber()">按數字排序</button>
@@ -280,31 +300,115 @@
                 <div class="hand-slots" id="playerHand" onclick="handleReturnToHand()"></div>
             </div>
 
-            <!-- 右：動態按鈕面板 -->
-            <div class="control-panel" id="actionPanel">
-                <!-- 按鈕會由 JavaScript 動態控制 -->
-            </div>
+            <div class="control-panel" id="actionPanel"></div>
         </div>
     </div>
 
     <script>
-        // 初始模擬手牌
-        let myHand = [
-            { id: 1, color: "RED", number: 5 },
-            { id: 2, color: "BLUE", number: 10 },
-            { id: 3, color: "YELLOW", number: 10 },
-            { id: 4, color: "BLACK", number: 9 },
-            { id: 5, color: "BLACK", number: 13 },
-            { id: 6, color: "JOKER", number: 0 },
-            { id: 7, color: "RED", number: 11 },
-            { id: 8, color: "BLUE", number: 4 }
-        ];
+        const wsUrl = "ws://localhost:8080/114-2_Internet_Programming_FinalProject/rummikub";
+        let socket;
+        let myIdentity = "WAITING"; 
+        let isMyTurn = false; // 📢 問題3：追蹤當前是否為自己的回合
 
-        // 模擬數據（未來連線時，這兩個數字會與 Java 後端的 DeckManager.java 進行即時綁定同步！）
+        function initWebSocket() {
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = function(e) {
+                console.log("[WS] 成功連接至 Java WebSocket 伺服器，進入配對佇列...");
+            };
+
+            socket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                console.log("[WS] 收到伺服器廣播數據: ", data);
+
+                // 📢 問題1 & 2：開局通知，接收伺服器隨機發的 14 張牌且棋盤完全乾淨
+                if (data.action === "START") {
+                    myIdentity = data.identity;
+                    isMyTurn = (myIdentity === "PLAYER_A"); // 玩家A為先手
+                    document.getElementById('myIdentityTag').innerText = (myIdentity === "PLAYER_A") ? "玩家 A (先手)" : "玩家 B (後手)";
+                    
+                    // 隱藏配對 Overlay 進入棋盤
+                    document.getElementById('matchingOverlay').style.display = 'none';
+                    
+                    myHand = data.hand;
+                    boardState = data.boardState;
+                    deckRemainingSum = data.deckRemaining;
+                    opponentCardSum = data.opponentCardCount;
+                    
+                    alert(data.msg);
+                    backupCurrentState();
+                    refreshUI();
+                }
+                
+                // 同步最新桌面狀態
+                else if (data.action === "SYNC_BOARD") {
+                    if (data.msg) alert("📢 " + data.msg);
+                    boardState = data.boardState;
+                    deckRemainingSum = data.deckRemaining;
+                    opponentCardSum = data.opponentCardCount;
+                    isMyTurn = data.isYourTurn; // 切換回合權
+                    backupCurrentState();
+                    refreshUI();
+                }
+
+                // 📢 問題4：接收後端摸牌成功的實體卡牌
+                else if (data.action === "DRAW_RESULT") {
+                    if (data.newCard) {
+                        myHand.push(data.newCard);
+                        alert("摸牌成功！你抽到了：" + (data.newCard.color === "JOKER" ? "☺ 百搭牌" : data.newCard.color + " " + data.newCard.number));
+                    }
+                    deckRemainingSum = data.deckRemaining;
+                    opponentCardSum = data.opponentCardCount;
+                    isMyTurn = false; // 📢 問題5：摸一張牌後強制結束回合
+                    backupCurrentState();
+                    refreshUI();
+                }
+
+                // 📢 問題5 & 6：接收驗證結果
+                else if (data.action === "TURN_RESULT") {
+                    if (data.success) {
+                        alert("🎉 " + data.msg);
+                        boardState = data.boardState;
+                        isMyTurn = false; // 回合正常移交
+                    } else {
+                        // 📢 問題6：牌組不符規定，恢復原狀，加入罰摸的那張新牌
+                        alert("❌ " + data.msg);
+                        
+                        // ✨【核心修正】在塞入罰摸的新卡牌之前，先將手牌陣列完全回溯倒帶還原！
+                        myHand = JSON.parse(JSON.stringify(initialHandBackup));
+
+                        if (data.newCard) {
+                            myHand.push(data.newCard);
+                        }
+                        boardState = data.boardState; // 後端傳回的原始殘局狀態
+                        isMyTurn = false; // 罰摸後強制輪到對手
+                    }
+                    deckRemainingSum = data.deckRemaining;
+                    opponentCardSum = data.opponentCardCount;
+                    selectedInfo = null;
+                    backupCurrentState();
+                    refreshUI();
+                }
+
+                else if (data.action === "OPPONENT_LEFT") {
+                    alert("🏆 系統通知: " + data.msg);
+                }
+            };
+
+            socket.onclose = function(e) {
+                document.getElementById('myIdentityTag').innerText = "連線中斷";
+                console.log("[WS] 伺服器連線已關閉");
+            };
+        }
+
+        // ==========================================
+        // 🧊 遊戲核心與 UI 渲染邏輯
+        // ==========================================
+        // 📢 問題2：一開始初始化皆為空，等待伺服器同步隨機資料
+        let myHand = [];
         let opponentCardSum = 14;
-        let deckRemainingSum = 78; // 106張 - 玩家A(14張) - 玩家B(14張) = 78張
+        let deckRemainingSum = 106;
 
-        // 備份狀態
         let initialHandBackup = [];
         let initialBoardBackup = [];
 
@@ -312,20 +416,13 @@
         const colsPerRow = 15;  
         let boardState = Array(totalRows).fill(null).map(() => Array(colsPerRow).fill(null));
 
-        // 初始注入上回合舊牌
-        boardState[1][5] = { id: 99, color: "RED", number: 1, isNew: false };
-        boardState[1][6] = { id: 100, color: "RED", number: 2, isNew: false };
-        boardState[1][7] = { id: 101, color: "RED", number: 3, isNew: false };
-
         let selectedInfo = null;
 
         function initGame() {
-            backupCurrentState();
-            refreshUI();
+            initWebSocket(); 
         }
 
         function refreshUI() {
-            // 更新看板數據
             document.getElementById('opponentCardCount').innerText = opponentCardSum;
             document.getElementById('deckRemainingCount').innerText = deckRemainingSum;
             
@@ -369,6 +466,9 @@
 
                         cardDiv.onclick = (e) => {
                             e.stopPropagation();
+                            // 📢 問題3：非自己回合拒減互動
+                            if (!isMyTurn) { alert("⏳ 目前是對手的回合，請靜心等待！"); return; }
+                            
                             if (selectedInfo && selectedInfo.type === "BOARD" && selectedInfo.row === r && selectedInfo.col === c) {
                                 selectedInfo = null;
                             } else {
@@ -378,7 +478,10 @@
                         };
                         cell.appendChild(cardDiv);
                     } else {
-                        cell.onclick = () => handleCellClick(r, c);
+                        cell.onclick = () => {
+                            if (!isMyTurn) return; // 📢 問題3：非自己回合拒絕落子
+                            handleCellClick(r, c);
+                        };
                     }
                     rowDiv.appendChild(cell);
                 }
@@ -405,6 +508,9 @@
 
                 cardDiv.onclick = (e) => {
                     e.stopPropagation();
+                    // 📢 問題3：非自己回合拒絕選取手牌
+                    if (!isMyTurn) { alert("⏳ 還沒輪到你，不能偷偷抽調手牌唷！"); return; }
+                    
                     if (selectedInfo && selectedInfo.type === "HAND" && selectedInfo.id === card.id) {
                         selectedInfo = null;
                     } else {
@@ -418,10 +524,19 @@
             });
         }
 
-        // --- 渲染控制面板 ---
+        // --- 渲染右側按鈕控制面板 ---
         function renderControlPanel() {
             const panel = document.getElementById('actionPanel');
             panel.innerHTML = ''; 
+
+            // 📢 問題3：非自己回合直接高亮提示，不渲染任何功能按鈕
+            if (!isMyTurn) {
+                const statusDiv = document.createElement('div');
+                statusDiv.style.cssText = "text-align:center; color:#7A7A77; font-size:13px; font-weight:bold; padding:15px; border:1px dashed #B5B5B2; border-radius:6px; background:#EDECE8;";
+                statusDiv.innerText = "⏳ 對手正在激烈理牌中...";
+                panel.appendChild(statusDiv);
+                return;
+            }
 
             if (!isTurnModified()) {
                 const btnDraw = document.createElement('button');
@@ -444,9 +559,9 @@
             }
         }
 
-        // --- 核心移動機制 ---
+        // --- 核心落子與收回邏輯 ---
         function handleCellClick(toRow, toCol) {
-            if (!selectedInfo) return;
+            if (!isMyTurn || !selectedInfo) return;
 
             if (selectedInfo.type === "HAND") {
                 const cardIndex = myHand.findIndex(c => c.id === selectedInfo.id);
@@ -466,6 +581,7 @@
         }
 
         function handleReturnToHand() {
+            if (!isMyTurn) return;
             if (selectedInfo && selectedInfo.type === "BOARD") {
                 const cardData = boardState[selectedInfo.row][selectedInfo.col];
                 if (cardData) {
@@ -482,14 +598,12 @@
             }
         }
 
-        // --- 排序功能 ---
+        // --- 排序理牌演算法 ---
         const colorOrder = { "RED": 1, "BLUE": 2, "YELLOW": 3, "BLACK": 4, "JOKER": 5 };
 
         function sortHandByColor() {
             myHand.sort((a, b) => {
-                if (colorOrder[a.color] !== colorOrder[b.color]) {
-                    return colorOrder[a.color] - colorOrder[b.color];
-                }
+                if (colorOrder[a.color] !== colorOrder[b.color]) return colorOrder[a.color] - colorOrder[b.color];
                 return a.number - b.number;
             });
             refreshUI();
@@ -497,23 +611,19 @@
 
         function sortHandByNumber() {
             myHand.sort((a, b) => {
-                if (a.number !== b.number) {
-                    return a.number - b.number;
-                }
+                if (a.number !== b.number) return a.number - b.number;
                 return colorOrder[a.color] - colorOrder[b.color];
             });
             refreshUI();
         }
 
-        // --- 按鈕事件處理 ---
+        // ==========================================
+        // 🚀 連線按鈕事件處理與 JSON 數據傳輸
+        // ==========================================
         function actionDrawCard() {
-            if (deckRemainingSum > 0) {
-                deckRemainingSum--; // 模擬摸牌成功，牌堆張數減少
-                alert("你選擇摸牌！剩餘牌堆減 1。之後連線時，後端 Java 會透過 WebSocket 塞一張真牌進去，並強制切換回合。");
-                refreshUI();
-            } else {
-                alert("牌堆已經乾了，無法再抽牌！");
-            }
+            if (!isMyTurn) return;
+            const payload = { action: "DRAW_CARD" };
+            socket.send(JSON.stringify(payload));
         }
 
         function actionResetTurn() {
@@ -524,12 +634,16 @@
         }
 
         function actionSubmitTurn() {
-            alert("正在發送當前 6x15 桌面狀態至伺服器驗證...");
+            if (!isMyTurn) return;
+            const payload = {
+                action: "SUBMIT_TURN",
+                boardState: boardState,
+                opponentCardCount: myHand.length 
+            };
+            socket.send(JSON.stringify(payload));
         }
 
         window.onload = initGame;
     </script>
 </body>
-</html> 
-
-
+</html>
