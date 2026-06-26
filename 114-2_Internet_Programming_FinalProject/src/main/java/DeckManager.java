@@ -11,7 +11,7 @@ public class DeckManager {
         initializeDeck();
     }
 
-    // 1. 初始化 106 張拉密牌
+    // 初始化 106 張拉密牌
     private void initializeDeck() {
         String[] colors = { "RED", "BLUE", "YELLOW", "BLACK" };
         int currentId = 1;
@@ -26,19 +26,19 @@ public class DeckManager {
             }
         }
 
-        // 加入 2 張黑色的百搭牌 (Joker)
+        // 加入 2 張黑色的百搭牌
         deck.add(new Card(currentId, "JOKER")); // ID: 105
         currentId++;
         deck.add(new Card(currentId, "JOKER")); // ID: 106
     }
 
-    // 2. 洗牌功能
+    // 洗牌功能
     public void shuffleDeck() {
         // 利用 Java 內建的 Collections.shuffle 進行隨機打亂
         Collections.shuffle(deck);
     }
 
-    // 3. 發牌功能 (拉密開局每人 14 張手牌)
+    // 發牌功能 (每人 14 張牌)
     public List<Card> drawHand() {
         List<Card> hand = new ArrayList<>();
         // 從牌堆頂端拿走 14 張牌
@@ -50,12 +50,12 @@ public class DeckManager {
         return hand;
     }
 
-    // 4. 摸牌功能 (單張)
+    // 摸牌功能 
     public Card drawCard() {
         if (!deck.isEmpty()) {
             return deck.remove(0);
         }
-        return null; // 牌摸完了
+        return null; 
     }
 
     // 獲取目前牌堆剩餘張數
@@ -63,17 +63,17 @@ public class DeckManager {
         return deck.size();
     }
 
-    // 測試用的 Main 函式，確認邏輯完全正確
+    // 測試用
     public static void main(String[] args) {
         DeckManager manager = new DeckManager();
-        System.out.println("牌組初始化完成，總張數：" + manager.getRemainingCount()); // 應該要是 106
+        System.out.println("牌組初始化完成，總張數：" + manager.getRemainingCount()); 
 
         manager.shuffleDeck();
         System.out.println("洗牌完成！");
 
         List<Card> playerAHand = manager.drawHand();
         System.out.println("玩家 A 的初始手牌 (14張)：" + playerAHand);
-        System.out.println("剩餘牌堆張數：" + manager.getRemainingCount()); // 應該要是 92
+        System.out.println("剩餘牌堆張數：" + manager.getRemainingCount());
     }
 
 }

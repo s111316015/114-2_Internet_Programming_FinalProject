@@ -3,15 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>連線拉密 Rummikub (高對比競技對戰版)</title>
+    <title>Rummikub</title>
     <style>
-        /* --- 全域防捲軸與現代高對比度規格 --- */
         html, body {
             height: 100%;
             margin: 0;
             padding: 0;
             overflow: hidden; 
-            background-color: #121416; /* 深碳黑底色，讓純白卡牌絕對顯眼 */
+            background-color: #121416; 
             font-family: 'Impact', Arial, 'Microsoft JhengHei', sans-serif;
             color: #F7FAFC;
         }
@@ -32,7 +31,7 @@
             gap: 10px;
         }
 
-        /* --- 頂端資訊列 --- */
+        /* 頂端資訊列 */
         .top-bar {
             display: flex;
             justify-content: space-between;
@@ -49,7 +48,7 @@
             font-family: 'Arial Black', sans-serif;
         }
 
-        /* 頂端數據面板：拉高色彩飽和度 */
+        /* 頂端數據面板 */
         .info-panel {
             padding: 6px 14px;
             border-radius: 20px;
@@ -61,9 +60,9 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
 
-        .opponent-panel { background-color: #E53E3E; color: #FFFFFF; } /* 戰鬥鮮紅 */
-        .deck-panel { background-color: #DD6B20; color: #FFFFFF; }     /* 活力飽和橘 */
-        .identity-panel { background-color: #3182CE; color: #FFFFFF; } /* 競技高對比藍 */
+        .opponent-panel { background-color: #E53E3E; color: #FFFFFF; } 
+        .deck-panel { background-color: #DD6B20; color: #FFFFFF; }     
+        .identity-panel { background-color: #3182CE; color: #FFFFFF; } 
 
         .card-count-badge {
             background-color: rgba(0,0,0,0.3) !important;
@@ -78,7 +77,7 @@
             gap: 10px;
         }
 
-        /* --- 1. 桌面網格區 —— 沉穩深邃藍綠，營造實體桌遊墊質感 --- */
+        /* 桌面網格區 */
         .board {
             background-color: #17242D; 
             border-radius: 12px;
@@ -110,7 +109,7 @@
             background-color: #273A48;
         }
 
-        /* --- 2. 下方主操作區 --- */
+        /* 下方主操作區 */
         .bottom-area {
             display: flex;
             gap: 12px;
@@ -183,20 +182,19 @@
             aspect-ratio: 3 / 4;
         }
 
-        /* --- 3. 卡牌核心規格 —— 數字巨幅放大、骨牌級高對比度質感 --- */
         .card {
             width: 100%;
             height: 100%;
             aspect-ratio: 3 / 4;
-            background-color: #FFFFFF; /* 純白厚實底色 */
+            background-color: #FFFFFF; 
             border-radius: 6px;
             box-shadow: 0 3px 8px rgba(0,0,0,0.4);
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 24px; /* 📢 數字強力放大！舊版為 14px */
-            font-weight: 900; /* 📢 採用最粗字體等級 */
-            font-family: 'Arial Black', 'Impact', sans-serif; /* 換用高清晰、粗體專用字型 */
+            font-size: 24px; 
+            font-weight: 900; 
+            font-family: 'Arial Black', 'Impact', sans-serif; 
             user-select: none;
             cursor: pointer;
             box-sizing: border-box;
@@ -208,19 +206,19 @@
             box-shadow: 0 5px 12px rgba(0,0,0,0.5);
         }
 
-        /* 新出牌與選取邊框強度拉高 */
-        .card.new-placed { border: 3px solid #38A169; } /* 醒目寶石綠新牌外框 */
+      
+        .card.new-placed { border: 3px solid #38A169; } 
         .card.old-placed { background-color: #F7FAFC; border: 1px solid #CBD5E0; }
-        .card.selected { outline: 4px solid #3182CE; }  /* 強烈雷射藍選取外框 */
+        .card.selected { outline: 4px solid #3182CE; }  
 
-        /* 📢 拋棄莫蘭迪！換上高飽和、高清晰度色彩 */
-        .card-red { color: #E53E3E; }    /* 明亮正紅 */
-        .card-blue { color: #0055A5; }   /* 深邃寶藍（在白底上擁有最強辨識度） */
-        .card-yellow { color: #D69E2E; } /* 高飽和金黃（帶點暗金色，絕不會在白底上隱形） */
-        .card-black { color: #111111; }  /* 漆黑墨色 */
-        .card-joker { color: #9B5DE5; }  /* 獨立炫亮紫作為 Joker，一眼看穿局勢 */
+       
+        .card-red { color: #E53E3E; }   
+        .card-blue { color: #0055A5; }   
+        .card-yellow { color: #D69E2E; } 
+        .card-black { color: #111111; } 
+        .card-joker { color: #9B5DE5; }  
 
-        /* --- 右側動態按鈕控制區 --- */
+        /*  右側動態按鈕控制區  */
         .control-panel {
             width: 160px;
             display: flex;
@@ -243,16 +241,16 @@
             font-family: sans-serif;
         }
 
-        .btn-draw { background-color: #48BB78; } /* 競技綠 */
+        .btn-draw { background-color: #48BB78; } 
         .btn-draw:hover { background-color: #38A169; }
 
-        .btn-reset { background-color: #E53E3E; } /* 警告紅 */
+        .btn-reset { background-color: #E53E3E; }
         .btn-reset:hover { background-color: #C53030; }
 
-        .btn-submit { background-color: #3182CE; } /* 決策藍 */
+        .btn-submit { background-color: #3182CE; }
         .btn-submit:hover { background-color: #2B6CB0; }
 
-        /* --- 📢 全版配對中等待畫面 --- */
+     
         #matchingOverlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -279,7 +277,7 @@
     <div id="matchingOverlay">
         <div class="spinner"></div>
         <h2 style="font-weight: 900; color: #FFFFFF; letter-spacing: 3px; margin: 0; font-family: 'Arial Black', sans-serif;">RUMMIKUB ONLINE</h2>
-        <p style="font-size: 14px; color: #A0AEC0; margin-top: 10px; font-family: sans-serif;" id="matchingStatus">正在連線至天梯佇列，尋找實力相當的對手...</p>
+        <p style="font-size: 14px; color: #A0AEC0; margin-top: 10px; font-family: sans-serif;" id="matchingStatus">正在連線，尋找對手中...</p>
     </div>
 
     <div class="game-container">
@@ -383,7 +381,7 @@
                     } else {
                         alert("❌ " + data.msg);
                         
-                        // 【已保存的修復核心】出牌失敗時，完整還原手牌防吞機制
+                        // 出牌失敗時，完整還原手牌防吞機制
                         myHand = JSON.parse(JSON.stringify(initialHandBackup));
 
                         if (data.newCard) {
@@ -400,7 +398,7 @@
                 }
 
                 else if (data.action === "OPPONENT_LEFT") {
-                    alert("🏆 系統通知: " + data.msg);
+                    alert("系統通知: " + data.msg);
                 }
             };
 
@@ -410,9 +408,7 @@
             };
         }
 
-        // ==========================================
-        // 🧊 遊戲核心與 UI 渲染邏輯
-        // ==========================================
+
         let myHand = [];
         let opponentCardSum = 14;
         let deckRemainingSum = 106;
@@ -473,7 +469,7 @@
 
                         cardDiv.onclick = (e) => {
                             e.stopPropagation();
-                            if (!isMyTurn) { alert("⏳ 目前是對手的回合，請靜心等待！"); return; }
+                            if (!isMyTurn) { alert("目前是對手的回合，請靜心等待！"); return; }
                             
                             if (selectedInfo && selectedInfo.type === "BOARD" && selectedInfo.row === r && selectedInfo.col === c) {
                                 selectedInfo = null;
@@ -513,7 +509,7 @@
 
                 cardDiv.onclick = (e) => {
                     e.stopPropagation();
-                    if (!isMyTurn) { alert("⏳ 還沒輪到你，不能偷偷抽調手牌唷！"); return; }
+                    if (!isMyTurn) { alert("還沒輪到你，不能偷偷抽調手牌唷！"); return; }
                     
                     if (selectedInfo && selectedInfo.type === "HAND" && selectedInfo.id === card.id) {
                         selectedInfo = null;
@@ -535,7 +531,7 @@
             if (!isMyTurn) {
                 const statusDiv = document.createElement('div');
                 statusDiv.style.cssText = "text-align:center; color:#A0AEC0; font-size:13px; font-weight:bold; padding:15px; border:1px dashed #4A5568; border-radius:6px; background:#1A202C;";
-                statusDiv.innerText = "⏳ 對手正在激烈理牌中...";
+                statusDiv.innerText = "對手正在激烈理牌中...";
                 panel.appendChild(statusDiv);
                 return;
             }
@@ -549,7 +545,7 @@
             } else {
                 const btnReset = document.createElement('button');
                 btnReset.className = 'btn-action btn-reset';
-                btnReset.innerText = '重新開始 (回到最初)';
+                btnReset.innerText = '重新開始 ';
                 btnReset.onclick = actionResetTurn;
                 panel.appendChild(btnReset);
 
@@ -591,7 +587,7 @@
                         myHand.push(cardData);
                         boardState[selectedInfo.row][selectedInfo.col] = null;
                     } else {
-                        alert("🔒 這是之前回合留下的牌，不能收回手牌區！");
+                        alert("這是之前回合留下的牌，不能收回手牌區！");
                     }
                     selectedInfo = null;
                     refreshUI();

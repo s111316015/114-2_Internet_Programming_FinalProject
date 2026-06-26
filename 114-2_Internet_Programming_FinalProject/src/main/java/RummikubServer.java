@@ -41,9 +41,8 @@ public class RummikubServer {
             activeRooms.put(player1.getId(), newRoom);
             activeRooms.put(player2.getId(), newRoom);
 
-            System.out.println("[UNIX LOG] [ROOM_CREATED] 成功媒合對戰! 房間內玩家: " + player1.getId() + " vs " + player2.getId());
+            System.out.println("[UNIX LOG] [ROOM_CREATED] 成功連線! 房間內玩家: " + player1.getId() + " vs " + player2.getId());
 
-            // 📢 問題2：開局時為先後手各自抽出隨機的 14 張牌
             List<Card> handA = newRoom.getDeckManager().drawHand();
             List<Card> handB = newRoom.getDeckManager().drawHand();
 
@@ -53,7 +52,6 @@ public class RummikubServer {
                     cardsToJson(handA), boardToJson(newRoom.getBoardState()), newRoom.getDeckManager().getRemainingCount()
                 );
                 
-                // ✨ 這裡已修正：精準補齊 boardToJson(newRoom.getBoardState()) 與剩餘張數參數
                 String startJsonB = String.format(
                     "{\"action\":\"START\", \"identity\":\"PLAYER_B\", \"msg\":\"配對成功! 你是後手玩家B。\", \"hand\":%s, \"boardState\":%s, \"deckRemaining\":%d, \"opponentCardCount\":14}",
                     cardsToJson(handB), boardToJson(newRoom.getBoardState()), newRoom.getDeckManager().getRemainingCount()
@@ -84,11 +82,11 @@ public class RummikubServer {
         String action = extractJsonValue(message, "action");
         Session opponent = room.getOpponent(session);
 
-        // 📢 問題4 & 5：處理主动摸牌與回合結束
+        // 主動摸牌-摸牌手牌+1，移交回合權
         if ("DRAW_CARD".equals(action)) {
             Card drawn = room.getDeckManager().drawCard();
             room.addHandCount(session, 1);
-            room.setCurrentTurn(opponent.getId()); // 摸牌代表無條件移交回合權
+            room.setCurrentTurn(opponent.getId()); 
 
             try {
                 session.getBasicRemote().sendText(String.format(
@@ -106,17 +104,15 @@ public class RummikubServer {
                 e.printStackTrace();
             }
         } 
-        // 📢 問題5 & 6：結束回合（包含破冰點數與常規合法牌組驗證）
+        // 處理結束回合提交-驗證出牌與勝負判定
         else if ("SUBMIT_TURN".equals(action)) {
             Card[][] proposedBoard = parseBoardState(message);
             boolean isFirstMeld = session.getId().equals(room.getPlayerA().getId()) ? room.isPlayerAFirstMeld() : room.isPlayerBFirstMeld();
 
-            // 呼叫驗證器檢查規則
             RummikubValidator.ValidationResult res = RummikubValidator.validateBoard(proposedBoard, isFirstMeld);
 
             try {
                 if (res.isSuccess()) {
-                    // 驗證成功：固化桌面狀態、消除 new 標記
                     room.setBoardState(proposedBoard);
                     for (int r = 0; r < 6; r++) {
                         for (int c = 0; c < 15; c++) {
@@ -126,7 +122,6 @@ public class RummikubServer {
                         }
                     }
 
-                    // 標註該玩家已完成破冰
                     if (session.getId().equals(room.getPlayerA().getId())) room.setPlayerAFirstMeld(false);
                     else room.setPlayerBFirstMeld(false);
 
@@ -136,6 +131,24 @@ public class RummikubServer {
                     else room.setPlayerBHandCount(handCount);
 
                     room.setCurrentTurn(opponent.getId());
+
+                    // 勝負判定
+                    if (handCount == 0) {
+                        String winnerRole = session.getId().equals(room.getPlayerA().getId()) ? "PLAYER_A" : "PLAYER_B";
+                        
+                        String gameOverWinnerMsg = "{\"action\":\"GAME_OVER\", \"winner\":\"" + winnerRole + "\", \"msg\":\"🎉 恭喜你率先清空所有手牌，贏得了這場拉密大戰！\"}";
+                        String gameOverLoserMsg  = "{\"action\":\"GAME_OVER\", \"winner\":\"" + winnerRole + "\", \"msg\":\"💀 遺憾戰敗！對手以雷霆之姿清空了手牌，再接再厲！\"}";
+                        
+                        if (session.getId().equals(room.getPlayerA().getId())) {
+                            room.getPlayerA().getBasicRemote().sendText(gameOverWinnerMsg);
+                            room.getPlayerB().getBasicRemote().sendText(gameOverLoserMsg);
+                        } else {
+                            room.getPlayerB().getBasicRemote().sendText(gameOverWinnerMsg);
+                            room.getPlayerA().getBasicRemote().sendText(gameOverLoserMsg);
+                        }
+                        return; // 中斷攔截，不發送常規同步廣播
+                    }
+                    
 
                     session.getBasicRemote().sendText(String.format(
                         "{\"action\":\"TURN_RESULT\", \"success\":true, \"msg\":\"%s\", \"boardState\":%s, \"deckRemaining\":%d, \"opponentCardCount\":%d}",
@@ -149,7 +162,6 @@ public class RummikubServer {
                         ));
                     }
                 } else {
-                    // 📢 問題6：驗證失敗，自動懲罰摸一張實體牌、回復原始棋盤殘局、強制結束回合
                     Card penaltyCard = room.getDeckManager().drawCard();
                     room.addHandCount(session, 1);
                     room.setCurrentTurn(opponent.getId());
@@ -182,6 +194,7 @@ public class RummikubServer {
             Session opponent = room.getOpponent(session);
             if (opponent != null && opponent.isOpen()) {
                 try {
+                    // 對手離開、中途斷線
                     opponent.getBasicRemote().sendText("{\"action\":\"OPPONENT_LEFT\", \"msg\":\"對手已離開遊戲，你獲得勝利!\"}");
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -198,7 +211,6 @@ public class RummikubServer {
         System.err.println("[UNIX LOG] [EXCEPTION] 連線異常: " + error.getMessage());
     }
 
-    // --- 🛠️ 輕量原生 JSON 工具函式組 ---
     private static String cardsToJson(List<Card> cards) {
         StringBuilder sb = new StringBuilder();
         sb.append("[");
@@ -249,7 +261,7 @@ public class RummikubServer {
     }
 
     private static Card[][] parseBoardState(String json) {
-        Card[][] board = new Card[6][15];
+        Card[][] board = new Card[6][15]; 
         int startIdx = json.indexOf("\"boardState\":");
         if (startIdx == -1) return board;
         
@@ -323,7 +335,6 @@ public class RummikubServer {
         return board;
     }
 
-    // --- 內部對戰房間物件狀態追蹤 ---
     private static class GameRoom {
         private Session playerA;
         private Session playerB;
@@ -340,7 +351,7 @@ public class RummikubServer {
             this.playerB = b;
             this.deckManager = new DeckManager();
             this.deckManager.shuffleDeck();
-            this.boardState = new Card[6][15];
+            this.boardState = new Card[6][15]; 
         }
 
         public Session getPlayerA() { return playerA; }
@@ -371,3 +382,4 @@ public class RummikubServer {
         }
     }
 }
+

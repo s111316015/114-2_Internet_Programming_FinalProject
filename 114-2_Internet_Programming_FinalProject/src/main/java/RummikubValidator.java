@@ -16,7 +16,7 @@ public class RummikubValidator {
         int totalRows = boardState.length;
         int totalCols = boardState[0].length;
         
-        int newPlacedScore = 0; // 紀錄本回合新出牌的總分（用於破冰）
+        int newPlacedScore = 0; // 紀錄本回合新出牌的總分（破冰）
         boolean hasNewCard = false;
 
         // 逐行切分牌組
@@ -47,7 +47,7 @@ public class RummikubValidator {
                             return new ValidationResult(false, "第 " + (r+1) + " 排的牌組不符合順組或群組規則！");
                         }
                         
-                        // 如果這組牌合法，且玩家正在嘗試破冰，我們需要計算這組牌中「新牌」所佔的實質點數
+                        // 如果這組牌合法，且玩家正在嘗試破冰，計算這組牌中「新牌」所佔的實質點數
                         if (isFirstMeld) {
                             newPlacedScore += calculateNewCardsScoreInSet(currentGroup);
                         }
@@ -61,29 +61,29 @@ public class RummikubValidator {
         // 破冰規則檢查
         if (isFirstMeld && hasNewCard) {
             if (newPlacedScore < 30) {
-                return new ValidationResult(false, "首次出牌（破冰）失敗！你出的新牌總和小於 30 分（目前：" + newPlacedScore + " 分）。");
+                return new ValidationResult(false, "破冰失敗！你出的新牌總和小於 30 分（目前：" + newPlacedScore + " 分）。");
             }
         }
 
-        return new ValidationResult(true, "驗證成功！牌組完全合法。");
+        return new ValidationResult(true, "驗證成功！");
     }
 
-    /**
-     * 檢查是否為合法群組 (Group)：數字相同、顏色不同
-     */
+    
+    //檢查是否為合法群組 ：數字相同、顏色不同
+     
     private static boolean isValidGroup(List<Card> set) {
         if (set.size() > 4) return false; // 群組最多 4 張牌（四種顏色）
 
         int targetNumber = -1;
         Set<String> colors = new HashSet<>();
 
-        // 1. 找出這組牌裡明確的數字（排除 Joker）
+        // 找出牌裡明確的數字（排除 Joker）
         for (Card card : set) {
             if (!card.isJoker()) {
                 if (targetNumber == -1) {
                     targetNumber = card.getNumber();
                 } else if (card.getNumber() != targetNumber) {
-                    return false; // 數字不同，必不為群組
+                    return false; // 數字不同，不為群組
                 }
                 
                 // 檢查顏色是否重複
@@ -96,24 +96,23 @@ public class RummikubValidator {
         return true; // 全是 Joker，或符合同數異色
     }
 
-    /**
-     * 檢查是否為合法順組 (Run)：同顏色、連續數字
-     */
+    
+    //檢查是否為合法順組 ：同顏色、連續數字
     private static boolean isValidRun(List<Card> set) {
         String targetColor = null;
         
-        // 1. 檢查顏色是否一致（排除 Joker）
+        // 檢查顏色是否一致（排除 Joker）
         for (Card card : set) {
             if (!card.isJoker()) {
                 if (targetColor == null) {
                     targetColor = card.getColor();
                 } else if (!card.getColor().equals(targetColor)) {
-                    return false; // 顏色不一致，必不為順組
+                    return false; // 顏色不一致，不為順組
                 }
             }
         }
 
-        // 2. 驗證數字是否連續（包含 Joker 的遞補邏輯）
+        // 驗證數字是否連續（包含 Joker 的遞補邏輯）
         // 因為拉密桌面不能隨意調換格子順序，前端放好的一定是按順序排好的格網
         int expectedNumber = -1;
         for (int i = 0; i < set.size(); i++) {
@@ -150,13 +149,11 @@ public class RummikubValidator {
         return true;
     }
 
-    /**
-     * 計算一組合法牌組中，「新放上去的牌」實質代表的分數（包含鬼牌的代入計算）
-     */
+    //計算一組合法牌組中，「新放上去的牌」實質代表的分數（包含鬼牌的代入計算）
     private static int calculateNewCardsScoreInSet(List<Card> set) {
         int totalNewScore = 0;
 
-        // A. 如果是群組：Joker 的點數等於其他標準牌的數字
+        // 如果是群組：Joker 的點數等於其他標準牌的數字
         if (isValidGroup(set)) {
             int groupNum = 1;
             for (Card c : set) {
@@ -166,7 +163,7 @@ public class RummikubValidator {
                 if (c.isNew()) totalNewScore += groupNum;
             }
         } 
-        // B. 如果是順組：Joker 的點數必須依據當前位置去推算
+        // 如果是順組：Joker 的點數必須依據當前位置去推算
         else if (isValidRun(set)) {
             int baseNum = -1;
             int baseIdx = -1;
@@ -191,7 +188,7 @@ public class RummikubValidator {
         return totalNewScore;
     }
 
-    // --- 用於打包回傳結果的輔助類別 ---
+    //用於打包回傳結果的輔助類別
     public static class ValidationResult {
         private boolean success;
         private String message;
